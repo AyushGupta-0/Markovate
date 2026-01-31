@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  incidents Incident[]
+
+  @@map("users")
+}
+
+model Incident {
+  id          String         @id @default(uuid()) @db.Uuid
+  title       String
+  description String
+  severity    Severity
+  status      IncidentStatus @default(OPEN)
+  createdBy   String         @map("created_by") @db.Uuid
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  user   User            @relation(fields: [createdBy], references: [id])
+  events IncidentEvent[]
+
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+  @@index([createdBy])
+  @@map("incidents")
+}
+
+model IncidentEvent {
+  id         String    @id @default(uuid()) @db.Uuid
+  incidentId String    @map("incident_id") @db.Uuid
+  type       EventType
+  payload    Json
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  incident Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId])
+  @@index([createdAt])
+  @@map("incident_events")
+}
+
+model IdempotencyKey {
+  id                 String   @id @default(uuid()) @db.Uuid
+  key                String   @unique
+  requestHash        String   @map("request_hash")
+  responseIncidentId String?  @map("response_incident_id") @db.Uuid
+  expiresAt          DateTime @map("expires_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+enum Severity {
+  P1
+  P2
+  P3
+}
+
+enum IncidentStatus {
+  OPEN
+  ACK
+  RESOLVED
+}
+
+enum EventType {
+  CREATED
+  STATUS_CHANGED
+  COMMENTED
+}
