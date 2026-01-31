@@ -31,7 +31,7 @@ export async function createIncident(data: CreateIncidentDTO) {
   }
 
   // Create incident and event in a transaction
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: any) => {
     const incident = await tx.incident.create({
       data: {
         title: data.title,
@@ -163,7 +163,7 @@ export async function updateIncidentStatus(id: string, newStatus: IncidentStatus
   }
 
   // Update status and create event in transaction
-  const result = await prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx: any) => {
     const updated = await tx.incident.update({
       where: { id },
       data: { status: newStatus },

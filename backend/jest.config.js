@@ -11,7 +11,14 @@ module.exports = {
   ],
   coverageDirectory: 'coverage',
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1'
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^uuid$': require.resolve('uuid')
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!uuid)'
+  ],
+  transform: {
+    '^.+\\.tsx?$': 'ts-jest',
   },
   setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts']
 };
