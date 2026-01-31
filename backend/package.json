@@ -14,11 +14,16 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts"
   },
-  "keywords": ["incident", "alerts", "monitoring"],
+  "keywords": [
+    "incident",
+    "alerts",
+    "monitoring"
+  ],
   "author": "",
   "license": "ISC",
   "description": "Incident and Alerts Management System",
   "dependencies": {
+    "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",

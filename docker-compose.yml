@@ -60,6 +60,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: development
     container_name: incident_frontend
     ports:
       - "3002:3000"
