@@ -1,10 +1,12 @@
 import express from 'express';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
 import { config } from './config';
 import { connectDatabase } from './config/database';
 import { requestIdMiddleware } from './middlewares/requestId';
 import { loggerMiddleware } from './middlewares/logger';
 import { errorHandler } from './middlewares/errorHandler';
+import { swaggerSpec } from './config/swagger';
 import healthRoutes from './routes/health';
 import userRoutes from './routes/users';
 import incidentRoutes from './routes/incidents';
@@ -16,6 +18,13 @@ app.use(cors());
 app.use(express.json());
 app.use(requestIdMiddleware);
 app.use(loggerMiddleware);
+
+// API Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
+});
 
 // Routes
 app.use('/health', healthRoutes);
