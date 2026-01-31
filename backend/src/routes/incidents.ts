@@ -87,7 +87,7 @@ router.get(
   validateRequest({ params: incidentIdSchema }),
   async (req: Request, res: Response, next) => {
     try {
-      const incident = await incidentService.getIncidentById(req.params.id);
+      const incident = await incidentService.getIncidentById(req.params.id as string);
       res.status(200).json(incident);
     } catch (error) {
       next(error);
@@ -102,7 +102,7 @@ router.patch(
   async (req: Request, res: Response, next) => {
     try {
       const incident = await incidentService.updateIncidentStatus(
-        req.params.id,
+        req.params.id as string,
         req.body.status
       );
       res.status(200).json(incident);
@@ -119,7 +119,7 @@ router.post(
   async (req: Request, res: Response, next) => {
     try {
       const event = await incidentService.addComment(
-        req.params.id,
+        req.params.id as string,
         req.body.comment,
         req.body.userId
       );
