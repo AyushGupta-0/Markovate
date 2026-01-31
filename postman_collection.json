@@ -1,0 +1,508 @@
+{
+  "info": {
+    "name": "Incident & Alerts API",
+    "description": "Complete API documentation for the Incident Management System",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "incident_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Checks",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Basic liveness check. Returns 200 if server is running."
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ready",
+              "host": ["{{base_url}}"],
+              "path": ["ready"]
+            },
+            "description": "Checks database and Redis connectivity. Returns 200 only if both are accessible."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('user_id', response.id);",
+                  "    pm.environment.set('user_id', response.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Johnson\",\n  \"email\": \"alice@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/users",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "users"]
+            },
+            "description": "Creates a new user. Email must be unique. Rate limited to 100 req/min."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Incidents",
+      "item": [
+        {
+          "name": "Create Incident",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('incident_id', response.id);",
+                  "    pm.environment.set('incident_id', response.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Database connection timeout\",\n  \"description\": \"Production database experiencing connection timeouts on primary node\",\n  \"severity\": \"P1\",\n  \"createdBy\": \"{{user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/incidents",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "incidents"]
+            },
+            "description": "Creates a new incident. Automatically saves incident ID to environment variable."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Incident (with Idempotency)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "my-unique-key-{{$timestamp}}",
+                "description": "Prevents duplicate incidents on retry"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"API response degradation\",\n  \"description\": \"API endpoints responding slower than baseline\",\n  \"severity\": \"P2\",\n  \"createdBy\": \"{{user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/incidents",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "incidents"]
+            },
+            "description": "Creates incident with idempotency key. Retry with same key returns existing incident."
+          },
+          "response": []
+        },
+        {
+          "name": "List Incidents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/incidents?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "incidents"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Items per page (default: 20, max: 100)"
+                },
+                {
+                  "key": "status",
+                  "value": "OPEN",
+                  "description": "Filter by status (OPEN, ACK, RESOLVED)",
+                  "disabled": true
+                },
+                {
+                  "key": "severity",
+                  "value": "P1",
+                  "description": "Filter by severity (P1, P2, P3)",
+                  "disabled": true
+                },
+                {
+                  "key": "created_from",
+                  "value": "2026-01-01",
+                  "description": "Filter incidents created after this date",
+                  "disabled": true
+                },
+                {
+                  "key": "created_to",
+                  "value": "2026-12-31",
+                  "description": "Filter incidents created before this date",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lists incidents with pagination and filters. Results sorted by created_at DESC."
+          },
+          "response": []
+        },
+        {
+          "name": "List Open P1 Incidents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/incidents?status=OPEN&severity=P1",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "incidents"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "OPEN"
+                },
+                {
+                  "key": "severity",
+                  "value": "P1"
+                }
+              ]
+            },
+            "description": "Example: Get all open critical incidents"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Incident Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v1/incidents/{{incident_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "incidents", "{{incident_id}}"]
+            },
+            "description": "Gets incident details with last 20 events. This endpoint is CACHED (5 min TTL)."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Status to ACK",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACK\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/incidents/{{incident_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "incidents", "{{incident_id}}", "status"]
+            },
+            "description": "Updates incident status. Validates state transitions. Invalidates cache."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Status to RESOLVED",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"RESOLVED\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/incidents/{{incident_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "incidents", "{{incident_id}}", "status"]
+            },
+            "description": "Resolves the incident. RESOLVED is a terminal state - cannot transition from it."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Comment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"comment\": \"Investigation started. Checking database logs for connection errors.\",\n  \"userId\": \"{{user_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/v1/incidents/{{incident_id}}/comments",
+              "host": ["{{base_url}}"],
+              "path": ["v1", "incidents", "{{incident_id}}", "comments"]
+            },
+            "description": "Adds a comment to incident. Creates COMMENTED event. Invalidates cache."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Example Workflows",
+      "item": [
+        {
+          "name": "Complete Incident Lifecycle",
+          "item": [
+            {
+              "name": "Step 1 - Create User",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('User created', function() {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.collectionVariables.set('user_id', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Bob Smith\",\n  \"email\": \"bob{{$timestamp}}@example.com\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/users",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "users"]
+                }
+              }
+            },
+            {
+              "name": "Step 2 - Create Incident",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "pm.test('Incident created', function() {",
+                      "    pm.response.to.have.status(201);",
+                      "    const response = pm.response.json();",
+                      "    pm.collectionVariables.set('incident_id', response.id);",
+                      "});"
+                    ],
+                    "type": "text/javascript"
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Payment gateway timeout\",\n  \"description\": \"Users unable to complete payments\",\n  \"severity\": \"P1\",\n  \"createdBy\": \"{{user_id}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/incidents",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "incidents"]
+                }
+              }
+            },
+            {
+              "name": "Step 3 - Add Comment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"comment\": \"Team is investigating the issue\",\n  \"userId\": \"{{user_id}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/incidents/{{incident_id}}/comments",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "incidents", "{{incident_id}}", "comments"]
+                }
+              }
+            },
+            {
+              "name": "Step 4 - Acknowledge",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"ACK\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/incidents/{{incident_id}}/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "incidents", "{{incident_id}}", "status"]
+                }
+              }
+            },
+            {
+              "name": "Step 5 - Add Resolution Comment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"comment\": \"Issue resolved - payment gateway timeout increased\",\n  \"userId\": \"{{user_id}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/incidents/{{incident_id}}/comments",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "incidents", "{{incident_id}}", "comments"]
+                }
+              }
+            },
+            {
+              "name": "Step 6 - Resolve",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"RESOLVED\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/v1/incidents/{{incident_id}}/status",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "incidents", "{{incident_id}}", "status"]
+                }
+              }
+            },
+            {
+              "name": "Step 7 - View Final State",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/v1/incidents/{{incident_id}}",
+                  "host": ["{{base_url}}"],
+                  "path": ["v1", "incidents", "{{incident_id}}"]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
